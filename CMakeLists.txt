@@ -1,11 +1,19 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.14)
 project(hach)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
+# ── EIPScanner ────────────────────────────────────────────────────────────────
 add_subdirectory(third_party/EIPScanner)
 
+# ── nlohmann/json ─────────────────────────────────────────────────────────────
+add_subdirectory(third_party/nlohmann_json)
+
+# ── Executable ────────────────────────────────────────────────────────────────
 add_executable(hach main.cpp)
 
 target_include_directories(hach PRIVATE ${CMAKE_SOURCE_DIR}/third_party/EIPScanner/src)
-target_link_libraries(hach EIPScanner)
+target_link_libraries(hach
+    EIPScanner
+    nlohmann_json::nlohmann_json
+)

@@ -1,0 +1,10 @@
+[Unit]
+Description=Hach Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/hach
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -172,7 +172,7 @@ static void mqttPublish(const std::string& payload) {
     if (mosquitto_connect(mosq, "localhost", 1234, 60) != MOSQ_ERR_SUCCESS) {
         std::cerr << "MQTT connect failed\n";
     } else {
-        mosquitto_publish(mosq, nullptr, "hach/sc4500",
+        mosquitto_publish(mosq, nullptr, config::recTopic,
                           static_cast<int>(payload.size()), payload.c_str(), 0, false);
     }
     mosquitto_destroy(mosq);

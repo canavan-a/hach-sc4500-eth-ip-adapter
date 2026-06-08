@@ -6,7 +6,6 @@
 #include <chrono>
 #include <cstdint>
 #include <cstring>
-#include <expected>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -21,7 +20,7 @@ using namespace eipScanner::cip;
 using namespace eipScanner::utils;
 using json = nlohmann::json;
 
-// ── Result type ──────────────────────────────────────────────────────────────
+// ── Result type (C++17, replaces std::expected) ───────────────────────────────
 
 struct CipError {
     std::string message;
@@ -29,7 +28,27 @@ struct CipError {
 };
 
 template <typename T>
-using Result = std::expected<T, CipError>;
+class Result {
+public:
+    Result(T val) : data_(std::move(val)) {}
+    Result(CipError err) : data_(std::move(err)) {}
+
+    explicit operator bool() const { return std::holds_alternative<T>(data_); }
+
+    T&       operator*()       { return std::get<T>(data_); }
+    const T& operator*() const { return std::get<T>(data_); }
+    T*       operator->()       { return &std::get<T>(data_); }
+    const T* operator->() const { return &std::get<T>(data_); }
+
+    CipError&       error()       { return std::get<CipError>(data_); }
+    const CipError& error() const { return std::get<CipError>(data_); }
+
+private:
+    std::variant<T, CipError> data_;
+};
+
+template <typename T>
+Result<T> make_error(CipError err) { return Result<T>(std::move(err)); }
 
 // ── Tag layout ───────────────────────────────────────────────────────────────
 
@@ -77,14 +96,14 @@ static Result<std::vector<uint8_t>> fetchRawData(MessageRouter& router,
         {});
 
     if (response.getGeneralStatusCode() != GeneralStatusCodes::SUCCESS) {
-        return std::unexpected(CipError{
+        return make_error<std::vector<uint8_t>>(CipError{
             "CIP request failed",
             static_cast<int>(response.getGeneralStatusCode())});
     }
 
     auto raw = response.getData();
     if (raw.empty()) {
-        return std::unexpected(CipError{"Empty response from device"});
+        return make_error<std::vector<uint8_t>>(CipError{"Empty response from device"});
     }
 
     return std::vector<uint8_t>(raw.begin(), raw.end());
@@ -135,7 +154,7 @@ static Result<std::shared_ptr<SessionInfo>> openSession() {
         auto si = std::make_shared<SessionInfo>(config::ipAddress, config::port);
         return si;
     } catch (const std::exception& e) {
-        return std::unexpected(CipError{std::string("Session open failed: ") + e.what()});
+        return make_error<std::shared_ptr<SessionInfo>>(CipError{std::string("Session open failed: ") + e.what()});
     }
 }
 

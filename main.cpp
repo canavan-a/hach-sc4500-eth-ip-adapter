@@ -1,6 +1,7 @@
 #include <MessageRouter.h>
 #include <utils/Buffer.h>
 
+#include <mosquitto.h>
 #include <nlohmann/json.hpp>
 
 #include <chrono>
@@ -158,6 +159,26 @@ static Result<std::shared_ptr<SessionInfo>> openSession() {
     }
 }
 
+// ── MQTT publish ─────────────────────────────────────────────────────────────
+
+static void mqttPublish(const std::string& payload) {
+    mosquitto_lib_init();
+    mosquitto* mosq = mosquitto_new(nullptr, true, nullptr);
+    if (!mosq) {
+        std::cerr << "mosquitto_new failed\n";
+        mosquitto_lib_cleanup();
+        return;
+    }
+    if (mosquitto_connect(mosq, "localhost", 1234, 60) != MOSQ_ERR_SUCCESS) {
+        std::cerr << "MQTT connect failed\n";
+    } else {
+        mosquitto_publish(mosq, nullptr, "hach/sc4500",
+                          static_cast<int>(payload.size()), payload.c_str(), 0, false);
+    }
+    mosquitto_destroy(mosq);
+    mosquitto_lib_cleanup();
+}
+
 // ── Main loop ─────────────────────────────────────────────────────────────────
 
 int main() {
@@ -192,7 +213,9 @@ int main() {
             continue;
         }
 
+        std::string payload = decodeResult->dump();
         std::cout << decodeResult->dump(2) << "\n";
+        mqttPublish(payload);
         std::this_thread::sleep_for(std::chrono::milliseconds(config::pollMs));
     }
 }

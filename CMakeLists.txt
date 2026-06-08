@@ -16,4 +16,5 @@ target_include_directories(hach PRIVATE ${CMAKE_SOURCE_DIR}/third_party/EIPScann
 target_link_libraries(hach
     EIPScanner
     nlohmann_json::nlohmann_json
+    mosquitto
 )

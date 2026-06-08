@@ -7,13 +7,7 @@ set(CMAKE_CXX_STANDARD 23)
 add_subdirectory(third_party/EIPScanner)
 
 # ── nlohmann/json ─────────────────────────────────────────────────────────────
-include(FetchContent)
-FetchContent_Declare(
-    json
-    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
-    URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
-)
-FetchContent_MakeAvailable(json)
+add_subdirectory(third_party/nlohmann_json)
 
 # ── Executable ────────────────────────────────────────────────────────────────
 add_executable(hach main.cpp)

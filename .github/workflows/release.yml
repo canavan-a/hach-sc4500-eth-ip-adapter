@@ -1,0 +1,46 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build for armv7
+        uses: uraimo/run-on-arch-action@v2
+        id: build
+        with:
+          arch: armv7
+          distro: bullseye
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update -q -y
+            apt-get install -q -y cmake build-essential libmosquitto-dev
+          run: |
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+            cmake --build build --parallel
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp build/hach dist/hach
+          cp hach.service dist/hach.service
+          tar -czf hach-${{ github.ref_name }}-linux-armv7.tar.gz -C dist .
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: hach-${{ github.ref_name }}-linux-armv7.tar.gz
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true

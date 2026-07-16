@@ -14,7 +14,7 @@ add_executable(hach main.cpp)
 
 target_include_directories(hach PRIVATE ${CMAKE_SOURCE_DIR}/third_party/EIPScanner/src)
 target_link_libraries(hach
-    EIPScanner
+    EIPScannerS
     nlohmann_json::nlohmann_json
     mosquitto
 )

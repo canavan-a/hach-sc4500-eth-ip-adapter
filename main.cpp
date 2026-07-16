@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -76,6 +77,43 @@ static constexpr TagDef TAGS[] = {
     {"HV Relay Position",       TagType::Integer, 30},
     {"HV Relay Input Ch2",      TagType::Float,   32},
 };
+
+// ── Heartbeat staleness tracking ─────────────────────────────────────────────
+
+static constexpr auto HEARTBEAT_STALE_AFTER = std::chrono::hours(1);
+
+struct HeartbeatState {
+    uint16_t                             lastValue = 0;
+    std::chrono::steady_clock::time_point lastChangeTime;
+    bool                                  initialized = false;
+};
+
+static std::unordered_map<std::string, HeartbeatState> heartbeatStates;
+
+static void updateHeartbeatStatuses(json& tags) {
+    auto now = std::chrono::steady_clock::now();
+
+    for (const auto& tag : TAGS) {
+        std::string name(tag.name);
+        if (name.find("Heartbeat") == std::string::npos) continue;
+        if (tags[tag.name].is_null()) continue;
+
+        uint16_t value = tags[tag.name].get<uint16_t>();
+        auto& state = heartbeatStates[name];
+
+        if (!state.initialized) {
+            state.lastValue      = value;
+            state.lastChangeTime = now;
+            state.initialized    = true;
+        } else if (value != state.lastValue) {
+            state.lastValue      = value;
+            state.lastChangeTime = now;
+        }
+
+        bool stale = (now - state.lastChangeTime) >= HEARTBEAT_STALE_AFTER;
+        tags[name + " Status"] = stale ? "ERROR" : "NORMAL";
+    }
+}
 
 // ── Decode helpers ────────────────────────────────────────────────────────────
 
@@ -212,6 +250,8 @@ int main() {
             std::this_thread::sleep_for(std::chrono::milliseconds(config::pollMs));
             continue;
         }
+
+        updateHeartbeatStatuses((*decodeResult)["tags"]);
 
         std::string payload = decodeResult->dump();
         std::cout << decodeResult->dump(2) << "\n";

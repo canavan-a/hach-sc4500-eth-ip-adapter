@@ -80,7 +80,7 @@ static constexpr TagDef TAGS[] = {
 
 // ── Heartbeat staleness tracking ─────────────────────────────────────────────
 
-static constexpr auto HEARTBEAT_STALE_AFTER = std::chrono::hours(1);
+static constexpr auto HEARTBEAT_STALE_AFTER = std::chrono::minutes(5);
 
 struct HeartbeatState {
     uint16_t                             lastValue = 0;
